@@ -63,29 +63,81 @@ void setup() {
 
 
 // dump the packet to a human readable string
-void dump1(int index) {
+void dumpBin(int index, bool high, char* prefix) {
 
   static char bit_string[] = "0000000000000000000000000000000000000000000000000";
+
+  for (int b = 0; b < PACKET_LEN; b++) {
+    index %= PACKET_LEN;
+    bit_string[b] = (packet_bits[index++] == (high ? HIGH : LOW) ? '1' : '0');
+  }    
+
+  // show the info
+  Serial.print(prefix);
+  Serial.println(bit_string);
+}
+
+
+
+int bcd(int index, bool high) {
+
+  int decimal = 0;
+
+  for (int b = 0; b < 4; b++) {    
+    if (packet_bits[index++] == (high ? HIGH : LOW)) decimal |= 1;
+    decimal <<= 1;
+  }
+
+  return (decimal >= 0 && decimal <= 9 ? decimal : -1);
+}
+
+
+// dump the packet to a human readable string
+void dumpBcd(int index, int offset, bool high, char* prefix) {
+
+  static char bit_string[] = "____________";
+
+  int last = PACKET_LEN - offset;
+  int b = 0, c = 0;
+  while (last - b >= 4) {
+      int dec = bcd(b, high);
+      bit_string[c] = (dec < 0 ? '_' : '0' + dec);
+      b += 4;
+  }
+
+  // show the info
+  Serial.print(prefix);
+  Serial.println(bit_string);
+
 
   for (int b = 0; b < PACKET_LEN; b++) {
     index %= PACKET_LEN;
     bit_string[b] = (packet_bits[index++] == HIGH ? '1' : '0');
   }    
 
-  // show the info
-  Serial.println(bit_string);
 }
 
 
 void loop() {
 
-  if (new_packet) {
+  if (new_packet && start_index >= 0) {
 
     // get the previous packet in the buffer
     int index = (start_index + PACKET_LEN);
 
     // dump the packet to a human readable string
-    dump1(index);
+    dumpBin(index, true, "BIN1 ");
+    dumpBin(index, false, "BIN0 ");
+
+    // BDC
+    dumpBcd(index, 0, true, "BCD01 ");
+    dumpBcd(index, 0, false, "BCD00 ");
+    dumpBcd(index, 1, true, "BCD11 ");
+    dumpBcd(index, 1, false, "BCD10 ");
+    dumpBcd(index, 2, true, "BCD21 ");
+    dumpBcd(index, 2, false, "BCD20 ");
+    dumpBcd(index, 3, true, "BCD31 ");
+    dumpBcd(index, 3, false, "BCD30 ");
 
     // packet is done
     new_packet = false;
