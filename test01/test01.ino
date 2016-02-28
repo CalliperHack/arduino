@@ -48,10 +48,6 @@ void isr_clock() {
 
 
 
-char bit_string[PACKET_LEN];
-
-
-
 void setup() {
 
   Serial.begin(115200);
@@ -63,10 +59,22 @@ void setup() {
 
   // execute isr_clock() when clock signal (CLK) rises
   attachInterrupt(digitalPinToInterrupt(PIN_CLK), isr_clock, RISING);
-
-  bit_string[PACKET_LEN - 1] = '\0';
 }
 
+
+// dump the packet to a human readable string
+void dump1(int index) {
+
+  static char bit_string[] = "0000000000000000000000000000000000000000000000000";
+
+  for (int b = 0; b < PACKET_LEN; b++) {
+    index %= PACKET_LEN;
+    bit_string[b] = (packet_bits[index++] == HIGH ? '1' : '0');
+  }    
+
+  // show the info
+  Serial.println(bit_string);
+}
 
 
 void loop() {
@@ -76,14 +84,8 @@ void loop() {
     // get the previous packet in the buffer
     int index = (start_index + PACKET_LEN);
 
-    // dump the packet to a human readable string    
-    for (int b = 0; b < PACKET_LEN; b++) {
-      index %= PACKET_LEN;
-      bit_string[b] = (packet_bits[index++] == HIGH ? '1' : '0');
-    }
-
-    // show the info
-    Serial.println(bit_string);
+    // dump the packet to a human readable string
+    dump1(index);
 
     // packet is done
     new_packet = false;
