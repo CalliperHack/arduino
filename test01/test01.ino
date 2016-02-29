@@ -1,7 +1,7 @@
 
 /**
  * 
- * GPLv3 license (see README.md)
+ * GPLv3 license (read the LICENSE file)
  * 
  * (C) 2016 CalliperHack Team https://github.com/CalliperHack
  * 
@@ -78,7 +78,7 @@ void dumpBin(int index, bool high, char* prefix) {
 }
 
 
-
+// decode a BCD digit
 int bcd(int index, bool high) {
 
   int decimal = 0;
@@ -95,26 +95,29 @@ int bcd(int index, bool high) {
 // dump the packet to a human readable string
 void dumpBcd(int index, int offset, bool high, char* prefix) {
 
+  // string buffer
   static char bit_string[] = "____________";
 
+  // length depends on the offset over the bit stream
   int last = PACKET_LEN - offset;
-  int b = 0, c = 0;
+
+  // binary to decimal
+  int b = offset, c = 0;
   while (last - b >= 4) {
+
+      // decode 4 BCD bits from bit b
       int dec = bcd(b, high);
+
+      // ASCII representation (0-9) or none (_)
       bit_string[c] = (dec < 0 ? '_' : '0' + dec);
+
+      // BCD is 4 bits long
       b += 4;
   }
 
   // show the info
   Serial.print(prefix);
   Serial.println(bit_string);
-
-
-  for (int b = 0; b < PACKET_LEN; b++) {
-    index %= PACKET_LEN;
-    bit_string[b] = (packet_bits[index++] == HIGH ? '1' : '0');
-  }    
-
 }
 
 
@@ -126,18 +129,18 @@ void loop() {
     int index = (start_index + PACKET_LEN);
 
     // dump the packet to a human readable string
-    dumpBin(index, true, "BIN1 ");
-    dumpBin(index, false, "BIN0 ");
+    dumpBin(index, true, "BIN1: ");
+    dumpBin(index, false, "BIN0: ");
 
     // BDC
-    dumpBcd(index, 0, true, "BCD01 ");
-    dumpBcd(index, 0, false, "BCD00 ");
-    dumpBcd(index, 1, true, "BCD11 ");
-    dumpBcd(index, 1, false, "BCD10 ");
-    dumpBcd(index, 2, true, "BCD21 ");
-    dumpBcd(index, 2, false, "BCD20 ");
-    dumpBcd(index, 3, true, "BCD31 ");
-    dumpBcd(index, 3, false, "BCD30 ");
+    dumpBcd(index, 0, true, "BCD01: ");
+    dumpBcd(index, 0, false, "BCD00: ");
+    dumpBcd(index, 1, true, "BCD11: ");
+    dumpBcd(index, 1, false, "BCD10: ");
+    dumpBcd(index, 2, true, "BCD21: ");
+    dumpBcd(index, 2, false, "BCD20: ");
+    dumpBcd(index, 3, true, "BCD31: ");
+    dumpBcd(index, 3, false, "BCD30: ");
 
     // packet is done
     new_packet = false;
