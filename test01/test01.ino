@@ -8,8 +8,8 @@
  */
 
 
-// minimum time in microseconds to detect new packets
-#define MICROSECONDS_BETWEEN_PACKETS 50000
+// milliseconds between packets
+#define MS_BETWEEN_PACKETS 100
 
 #define PIN_CLK 2
 #define PIN_SDA 3
@@ -25,25 +25,25 @@ volatile bool new_packet = false;
 // interrupt service routine
 void isr_clock() {
 
+  // persisted variables
   static int index = 0;
   static unsigned long previous_time = micros();
 
   // read data signals (SDA) and store them 
-  packet_bits[index++] = digitalRead(PIN_SDA);
-
-  // array bounds
-  index %= PACKET_BUFFER_LEN;
-
-  unsigned long time = micros();
+  packet_bits[index] = digitalRead(PIN_SDA);
 
   // detect a new packet
-  if (time - previous_time > MICROSECONDS_BETWEEN_PACKETS) {
+  unsigned long time = micros();
+  if (time - previous_time > MS_BETWEEN_PACKETS * 1000 / 2) {
 
     // new packet
-    previous_time = time;
     start_index = index;
     new_packet = true;
   }
+
+  // prepare next cycle
+  ++index %= PACKET_BUFFER_LEN;
+  previous_time = time;
 }
 
 
@@ -65,12 +65,13 @@ void setup() {
 // dump the packet to a human readable string
 void dumpBin(int index, bool high, char* prefix) {
 
-  static char bit_string[] = "0000000000000000000000000000000000000000000000000";
+  static char bit_string[PACKET_LEN + 1];
 
   for (int b = 0; b < PACKET_LEN; b++) {
     index %= PACKET_LEN;
     bit_string[b] = (packet_bits[index++] == (high ? HIGH : LOW) ? '1' : '0');
   }    
+  bit_string[PACKET_LEN] = '\0';
 
   // show the info
   Serial.print(prefix);
@@ -96,7 +97,7 @@ int bcd(int index, bool high) {
 void dumpBcd(int index, int offset, bool high, char* prefix) {
 
   // string buffer
-  static char bit_string[] = "____________";
+  static char bit_string[12 + 1];
 
   // length depends on the offset over the bit stream
   int last = PACKET_LEN - offset;
